@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GLB 3D Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            background: #f5f5f7;
+            color: #222;
+        }
+        #container {
+            width: 100vw;
+            height: 100vh;
+        }
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            color: #222;
+            z-index: 100;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            border: 1px solid #e5e5e5;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        input[type="file"] {
+            display: block;
+            margin-bottom: 10px;
+            color: #222;
+        }
+        .axis-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        button.active {
+            background: #1976d2;
+            color: #fff;
+        }
+        button:not(.active) {
+            background: #e9eef6;
+            color: #223;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        #info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            color: #222;
+            font-size: 12px;
+            z-index: 100;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            border: 1px solid #e5e5e5;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    
+    <div id="controls">
+        <div class="control-group">
+            <label>Load GLB Model:</label>
+            <input type="file" id="fileInput" accept=".glb">
+        </div>
+        <div class="control-group">
+            <label>Movement Mode:</label>
+            <div class="axis-buttons">
+                <button id="btnAll" class="active">All Axes</button>
+                <button id="btnX">X Only</button>
+                <button id="btnY">Y Only</button>
+                <button id="btnZ">Z Only</button>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>Position Controls:</label>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label for="posX" style="margin:0; width:20px;">X:</label>
+                    <input type="number" id="posX" step="0.01" style="width:80px;">
+                    <button id="setX" style="padding:4px 8px; font-size:12px;">Set</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label for="posY" style="margin:0; width:20px;">Y:</label>
+                    <input type="number" id="posY" step="0.01" style="width:80px;">
+                    <button id="setY" style="padding:4px 8px; font-size:12px;">Set</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label for="posZ" style="margin:0; width:20px;">Z:</label>
+                    <input type="number" id="posZ" step="0.01" style="width:80px;">
+                    <button id="setZ" style="padding:4px 8px; font-size:12px;">Set</button>
+                </div>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>Rotation Controls:</label>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label for="rotX" style="margin:0; width:20px;">X:</label>
+                    <input type="number" id="rotX" step="0.01" style="width:80px;" readonly>
+                    <button id="rotXMinus45" style="padding:4px 8px; font-size:12px;">-45°</button>
+                    <button id="rotXPlus45" style="padding:4px 8px; font-size:12px;">+45°</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label for="rotY" style="margin:0; width:20px;">Y:</label>
+                    <input type="number" id="rotY" step="0.01" style="width:80px;" readonly>
+                    <button id="rotYMinus45" style="padding:4px 8px; font-size:12px;">-45°</button>
+                    <button id="rotYPlus45" style="padding:4px 8px; font-size:12px;">+45°</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label for="rotZ" style="margin:0; width:20px;">Z:</label>
+                    <input type="number" id="rotZ" step="0.01" style="width:80px;" readonly>
+                    <button id="rotZMinus45" style="padding:4px 8px; font-size:12px;">-45°</button>
+                    <button id="rotZPlus45" style="padding:4px 8px; font-size:12px;">+45°</button>
+                </div>
+            </div>
+            <div style="margin-top:10px;">
+                <label for="rotationSlider" style="margin-bottom:5px; display:block;">Rotation Slider (Y-axis):</label>
+                <input type="range" id="rotationSlider" min="0" max="360" step="1" value="0" style="width:100%;">
+                <div style="text-align:center; font-size:12px; margin-top:5px;">
+                    <span id="rotationSliderValue">0°</span>
+                </div>
+            </div>
+        </div>
+        <div class="control-group">
+            <button id="resetBtn">Reset Position</button>
+        </div>
+        <div class="control-group">
+            <button id="saveBtn">Save .glb</button>
+        </div>
+        <div class="control-group">
+            <label>Auto-Adjustment:</label>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button id="saveLogBtn">Save Current Settings</button>
+                <button id="autoAdjustBtn">Auto-Adjust Model</button>
+                <button id="exportLogsBtn">Export Logs as TXT</button>
+                <button id="clearLogsBtn">Clear All Logs</button>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>Water Simulation:</label>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <input type="checkbox" id="waterToggle">
+                <label for="waterToggle" style="margin:0;">Show water plane</label>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+                <label for="waterZ" style="margin:0;">Water height (Y):</label>
+                <input type="range" id="waterZ" min="-50" max="50" step="0.01" value="0" style="width:160px;">
+                <input type="number" id="waterZNumber" min="-50" max="50" step="0.01" value="0" style="width:90px;">
+            </div>
+        </div>
+    </div>
+
+    <div id="info">
+        <div>
+        Click and drag to move the model<br>
+        Scroll to zoom<br>
+        Right-click drag to rotate camera
+        </div>
+        <hr style="border:none;border-top:1px solid #333;margin:10px 0;">
+        <div id="modelProps">No model loaded.</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+    <script>
+        let scene, camera, renderer, model;
+        let originalScene = null; // unmodified loaded scene for re-placement
+        let lastLoadedFileName = 'model';
+        let cameraTarget = new THREE.Vector3(0, 0, 0);
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let movementMode = 'all'; // 'all', 'x', 'y', 'z'
+        let isRightClick = false;
+        let cameraAngle = { theta: 0, phi: Math.PI / 4 };
+        let cameraDistance = 5;
+        let waterPlane = null;
+        let adjustmentLogs = JSON.parse(localStorage.getItem('modelAdjustmentLogs') || '[]');
+        let gridHelper = null;
+        let axesHelper = null;
+        let raycaster = new THREE.Raycaster();
+
+        // Initialize scene
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf5f5f7);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            updateCameraPosition();
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(5, 8, 5);
+            scene.add(directionalLight);
+
+            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.35);
+            directionalLight2.position.set(-5, 6, -5);
+            scene.add(directionalLight2);
+
+            // Grid helper (lighter) - will be scaled dynamically
+            gridHelper = new THREE.GridHelper(10, 10, 0xbbc7d6, 0xe1e7f0);
+            scene.add(gridHelper);
+
+            // Axis helper - will be scaled dynamically
+            axesHelper = new THREE.AxesHelper(2);
+            scene.add(axesHelper);
+
+            // Ground axis lines will be created dynamically in updateGroundAxisLines()
+
+            // Simple water rectangle (flat on XZ ground plane, adjustable Y height)
+            const waterMat = new THREE.MeshBasicMaterial({ 
+                color: 0x0066cc, 
+                side: THREE.DoubleSide 
+            });
+            waterPlane = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), waterMat);
+            waterPlane.rotation.x = -Math.PI / 2; // make it horizontal on XZ
+            waterPlane.position.y = 0;
+            waterPlane.visible = false;
+            scene.add(waterPlane);
+
+            // Event listeners
+            setupEventListeners();
+
+            // Initialize helper scaling
+            updateHelpersScale();
+
+            animate();
+        }
+
+        function updateCameraPosition() {
+            camera.position.x = cameraDistance * Math.sin(cameraAngle.theta) * Math.cos(cameraAngle.phi);
+            camera.position.y = cameraDistance * Math.sin(cameraAngle.phi);
+            camera.position.z = cameraDistance * Math.cos(cameraAngle.theta) * Math.cos(cameraAngle.phi);
+            camera.lookAt(cameraTarget);
+            
+            // Update grid and axis helpers to scale with camera distance
+            updateHelpersScale();
+        }
+
+        function updateHelpersScale() {
+            if (!gridHelper || !axesHelper) return;
+            
+            // Scale helpers based on camera distance
+            // Use a logarithmic scale to keep helpers visible but not overwhelming
+            // Allow much larger scaling for big models
+            const scale = Math.max(1, Math.min(cameraDistance / 5, 100));
+            
+            // Update grid helper
+            scene.remove(gridHelper);
+            gridHelper = new THREE.GridHelper(10 * scale, Math.max(10, Math.floor(10 * scale)), 0xbbc7d6, 0xe1e7f0);
+            scene.add(gridHelper);
+            
+            // Update axis helper
+            scene.remove(axesHelper);
+            axesHelper = new THREE.AxesHelper(2 * scale);
+            scene.add(axesHelper);
+            
+            // Update ground axis lines
+            updateGroundAxisLines(scale);
+        }
+
+        function updateGroundAxisLines(scale) {
+            // Remove existing ground axis lines
+            const existingLines = scene.children.filter(child => 
+                child.isLine && (child.material.color.getHex() === 0xff0000 || child.material.color.getHex() === 0x0000ff)
+            );
+            existingLines.forEach(line => scene.remove(line));
+            
+            // Create new scaled ground axis lines
+            const lineMaterialX = new THREE.LineBasicMaterial({ color: 0xff0000 }); // X red
+            const lineMaterialZ = new THREE.LineBasicMaterial({ color: 0x0000ff }); // Z blue
+            const xGeom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-5 * scale, 0, 0),
+                new THREE.Vector3(5 * scale, 0, 0)
+            ]);
+            const zGeom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, -5 * scale),
+                new THREE.Vector3(0, 0, 5 * scale)
+            ]);
+            const xLine = new THREE.Line(xGeom, lineMaterialX);
+            const zLine = new THREE.Line(zGeom, lineMaterialZ);
+            scene.add(xLine);
+            scene.add(zLine);
+        }
+
+        function loadGLB(file) {
+            const loader = new THREE.GLTFLoader();
+            const url = URL.createObjectURL(file);
+
+            loader.load(url, (gltf) => {
+                if (model) {
+                    scene.remove(model);
+                    model = null;
+                }
+
+                originalScene = gltf.scene; // keep pristine copy
+                placeModel();
+                URL.revokeObjectURL(url);
+            }, undefined, (error) => {
+                console.error('Error loading GLB:', error);
+                alert('Error loading GLB file. Please make sure it\'s a valid .glb file.');
+            });
+        }
+
+        function placeModel() {
+            if (!originalScene) return;
+            if (model) {
+                scene.remove(model);
+                model = null;
+            }
+
+            // clone fresh instance exactly as-authored (preserve original transforms/scale)
+            model = originalScene.clone(true);
+
+            scene.add(model);
+            // set camera target to model center and frame the camera distance
+            const box = new THREE.Box3().setFromObject(model);
+            cameraTarget.copy(box.getCenter(new THREE.Vector3()));
+            frameCameraToBox(box);
+            updateModelInfo();
+            updatePositionInputs();
+            updateRotationInputs();
+            updateCameraPosition();
+        }
+
+        function frameCameraToBox(box) {
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fitDistance = maxDim / (2 * Math.tan((camera.fov * Math.PI) / 360));
+            // add some padding and allow much larger distances for big models
+            cameraDistance = Math.min(Math.max(fitDistance * 1.5, 1), 1000);
+        }
+
+        function updateModelInfo() {
+            const propsEl = document.getElementById('modelProps');
+            if (!model) {
+                propsEl.textContent = 'No model loaded.';
+                return;
+            }
+
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const min = box.min.clone();
+            const max = box.max.clone();
+
+            // counts
+            let meshCount = 0;
+            let triangleCount = 0;
+            const materials = new Set();
+
+            model.traverse((obj) => {
+                if (obj.isMesh) {
+                    meshCount += 1;
+                    const geom = obj.geometry;
+                    if (geom) {
+                        const index = geom.index;
+                        const positionAttr = geom.attributes && geom.attributes.position;
+                        if (index && index.count) {
+                            triangleCount += Math.floor(index.count / 3);
+                        } else if (positionAttr && positionAttr.count) {
+                            triangleCount += Math.floor(positionAttr.count / 3);
+                        }
+                    }
+                    const mat = obj.material;
+                    if (Array.isArray(mat)) mat.forEach(m => materials.add(m.uuid));
+                    else if (mat) materials.add(mat.uuid);
+                }
+            });
+
+            const rotationX = (model.rotation.x * 180 / Math.PI).toFixed(1);
+            const rotationY = (model.rotation.y * 180 / Math.PI).toFixed(1);
+            const rotationZ = (model.rotation.z * 180 / Math.PI).toFixed(1);
+
+            propsEl.innerHTML =
+                'Dimensions (x,y,z): ' + size.x.toFixed(3) + ', ' + size.y.toFixed(3) + ', ' + size.z.toFixed(3) + '<br>' +
+                'Position (x,y,z): ' + model.position.x.toFixed(3) + ', ' + model.position.y.toFixed(3) + ', ' + model.position.z.toFixed(3) + '<br>' +
+                'Rotation (x,y,z): ' + rotationX + '°, ' + rotationY + '°, ' + rotationZ + '°<br>' +
+                'Min (x,y,z): ' + min.x.toFixed(3) + ', ' + min.y.toFixed(3) + ', ' + min.z.toFixed(3) + '<br>' +
+                'Max (x,y,z): ' + max.x.toFixed(3) + ', ' + max.y.toFixed(3) + ', ' + max.z.toFixed(3) + '<br>' +
+                'Meshes: ' + meshCount + '<br>' +
+                'Materials: ' + materials.size + '<br>' +
+                'Estimated Triangles: ' + triangleCount.toLocaleString();
+        }
+
+        function setupEventListeners() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    lastLoadedFileName = (file.name || 'model').replace(/\.[^/.]+$/, '');
+                    loadGLB(file);
+                }
+            });
+
+            // Axis buttons
+            document.getElementById('btnAll').addEventListener('click', () => setMovementMode('all'));
+            document.getElementById('btnX').addEventListener('click', () => setMovementMode('x'));
+            document.getElementById('btnY').addEventListener('click', () => setMovementMode('y'));
+            document.getElementById('btnZ').addEventListener('click', () => setMovementMode('z'));
+
+            // Position controls
+            document.getElementById('setX').addEventListener('click', () => setModelPosition('x'));
+            document.getElementById('setY').addEventListener('click', () => setModelPosition('y'));
+            document.getElementById('setZ').addEventListener('click', () => setModelPosition('z'));
+
+            // Rotation controls
+            document.getElementById('rotXMinus45').addEventListener('click', () => rotateModel('x', -45));
+            document.getElementById('rotXPlus45').addEventListener('click', () => rotateModel('x', 45));
+            document.getElementById('rotYMinus45').addEventListener('click', () => rotateModel('y', -45));
+            document.getElementById('rotYPlus45').addEventListener('click', () => rotateModel('y', 45));
+            document.getElementById('rotZMinus45').addEventListener('click', () => rotateModel('z', -45));
+            document.getElementById('rotZPlus45').addEventListener('click', () => rotateModel('z', 45));
+
+            // Rotation slider
+            const rotationSlider = document.getElementById('rotationSlider');
+            rotationSlider.addEventListener('input', (e) => {
+                setRotationFromSlider(e.target.value);
+            });
+
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                placeModel();
+                // Reset rotation slider
+                document.getElementById('rotationSlider').value = 0;
+                document.getElementById('rotationSliderValue').textContent = '0°';
+            });
+
+            // Save/export
+            document.getElementById('saveBtn').addEventListener('click', () => {
+                saveCurrentAsGLB();
+            });
+
+            // Auto-adjustment controls
+            document.getElementById('saveLogBtn').addEventListener('click', () => {
+                saveCurrentAdjustment();
+            });
+            document.getElementById('autoAdjustBtn').addEventListener('click', () => {
+                autoAdjustModel();
+            });
+            document.getElementById('exportLogsBtn').addEventListener('click', () => {
+                exportLogsAsTXT();
+            });
+            document.getElementById('clearLogsBtn').addEventListener('click', () => {
+                clearAllLogs();
+            });
+
+            // Water controls
+            const waterToggle = document.getElementById('waterToggle');
+            const waterZ = document.getElementById('waterZ');
+            const waterZNumber = document.getElementById('waterZNumber');
+
+            function updateWaterVisibility() {
+                if (waterPlane) waterPlane.visible = !!waterToggle.checked;
+            }
+
+            function setWaterZ(val) {
+                const z = parseFloat(val);
+                if (Number.isFinite(z)) {
+                    if (waterPlane) waterPlane.position.y = z * 0.1; // scale down: 2 meters = 0.2 units
+                    waterZ.value = String(z);
+                    waterZNumber.value = String(z);
+                }
+            }
+
+            if (waterToggle) {
+                waterToggle.addEventListener('change', updateWaterVisibility);
+            }
+            if (waterZ) {
+                waterZ.addEventListener('input', (e) => setWaterZ(e.target.value));
+            }
+            if (waterZNumber) {
+                waterZNumber.addEventListener('input', (e) => setWaterZ(e.target.value));
+            }
+
+            // initialize water controls
+            updateWaterVisibility();
+            setWaterZ(0);
+
+            // Mouse events
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('wheel', onWheel);
+            renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function setMovementMode(mode) {
+            movementMode = mode;
+            document.querySelectorAll('.axis-buttons button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`btn${mode === 'all' ? 'All' : mode.toUpperCase()}`).classList.add('active');
+        }
+
+        function setModelPosition(axis) {
+            if (!model) return;
+            
+            const input = document.getElementById(`pos${axis.toUpperCase()}`);
+            const value = parseFloat(input.value);
+            
+            if (!isNaN(value)) {
+                switch (axis) {
+                    case 'x':
+                        model.position.x = value;
+                        break;
+                    case 'y':
+                        model.position.y = value;
+                        break;
+                    case 'z':
+                        model.position.z = value;
+                        break;
+                }
+                updateModelInfo();
+            }
+        }
+
+        function updatePositionInputs() {
+            if (!model) return;
+            
+            document.getElementById('posX').value = model.position.x.toFixed(3);
+            document.getElementById('posY').value = model.position.y.toFixed(3);
+            document.getElementById('posZ').value = model.position.z.toFixed(3);
+        }
+
+        function updateRotationInputs() {
+            if (!model) return;
+            
+            // Convert radians to degrees for display
+            document.getElementById('rotX').value = (model.rotation.x * 180 / Math.PI).toFixed(1);
+            document.getElementById('rotY').value = (model.rotation.y * 180 / Math.PI).toFixed(1);
+            document.getElementById('rotZ').value = (model.rotation.z * 180 / Math.PI).toFixed(1);
+            
+            // Update rotation slider to match Y rotation
+            const yDegrees = (model.rotation.y * 180 / Math.PI) % 360;
+            const normalizedY = yDegrees < 0 ? yDegrees + 360 : yDegrees;
+            document.getElementById('rotationSlider').value = normalizedY;
+            document.getElementById('rotationSliderValue').textContent = normalizedY.toFixed(0) + '°';
+        }
+
+        function rotateModel(axis, degrees) {
+            if (!model) return;
+            
+            const radians = degrees * Math.PI / 180;
+            
+            switch (axis) {
+                case 'x':
+                    model.rotation.x += radians;
+                    break;
+                case 'y':
+                    model.rotation.y += radians;
+                    break;
+                case 'z':
+                    model.rotation.z += radians;
+                    break;
+            }
+            
+            updateRotationInputs();
+            updateModelInfo();
+        }
+
+        function setRotationFromSlider(value) {
+            if (!model) return;
+            
+            const degrees = parseFloat(value);
+            const radians = degrees * Math.PI / 180;
+            model.rotation.y = radians;
+            
+            updateRotationInputs();
+            updateModelInfo();
+        }
+
+        function onMouseDown(e) {
+            isDragging = true;
+            isRightClick = e.button === 2;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        }
+
+        function onMouseMove(e) {
+            if (!isDragging || !model) return;
+
+            const deltaX = e.clientX - previousMousePosition.x;
+            const deltaY = e.clientY - previousMousePosition.y;
+
+            if (isRightClick) {
+                // Rotate camera
+                cameraAngle.theta -= deltaX * 0.01;
+                cameraAngle.phi += deltaY * 0.01;
+                cameraAngle.phi = Math.max(0.1, Math.min(Math.PI - 0.1, cameraAngle.phi));
+                updateCameraPosition();
+            } else {
+                // Move model
+                const movementSpeed = 0.01;
+
+                switch (movementMode) {
+                    case 'all':
+                        model.position.x += deltaX * movementSpeed;
+                        model.position.y -= deltaY * movementSpeed;
+                        break;
+                    case 'x':
+                        model.position.x += deltaX * movementSpeed;
+                        break;
+                    case 'y':
+                        model.position.y -= deltaY * movementSpeed;
+                        break;
+                    case 'z':
+                        model.position.z += deltaX * movementSpeed;
+                        break;
+                }
+            }
+
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+            updatePositionInputs();
+        }
+
+        function onMouseUp() {
+            isDragging = false;
+            isRightClick = false;
+        }
+
+        function onWheel(e) {
+            e.preventDefault();
+            
+            // Get mouse position relative to the canvas
+            const rect = renderer.domElement.getBoundingClientRect();
+            const mouse = new THREE.Vector2();
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            // Create raycaster to find intersection point
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Try to intersect with the model first, then fallback to ground plane
+            let intersectionPoint = null;
+            
+            if (model) {
+                const modelIntersections = raycaster.intersectObject(model, true);
+                if (modelIntersections.length > 0) {
+                    intersectionPoint = modelIntersections[0].point;
+                }
+            }
+            
+            // If no model intersection, try ground plane (Y=0)
+            if (!intersectionPoint) {
+                const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+                const groundIntersection = new THREE.Vector3();
+                if (raycaster.ray.intersectPlane(groundPlane, groundIntersection)) {
+                    intersectionPoint = groundIntersection;
+                }
+            }
+            
+            // If still no intersection, use camera target
+            if (!intersectionPoint) {
+                intersectionPoint = cameraTarget.clone();
+            }
+            
+            // Calculate zoom amount
+            const zoomAmount = e.deltaY * 0.01;
+            
+            // Update camera distance
+            cameraDistance += zoomAmount;
+            cameraDistance = Math.max(0.5, Math.min(1000, cameraDistance));
+            
+            // Calculate direction from camera to intersection point
+            const directionToIntersection = intersectionPoint.clone().sub(camera.position).normalize();
+            
+            // Move camera towards intersection point
+            const currentDistance = camera.position.distanceTo(intersectionPoint);
+            const newPosition = intersectionPoint.clone().sub(directionToIntersection.multiplyScalar(cameraDistance));
+            
+            // Update camera position directly
+            camera.position.copy(newPosition);
+            camera.lookAt(cameraTarget);
+            
+            // Update helpers scale
+            updateHelpersScale();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        // Using official GLTFLoader from Three.js examples (included via script tag above)
+
+        function saveCurrentAsGLB() {
+            if (!model) {
+                alert('No model to export.');
+                return;
+            }
+
+            const exporter = new THREE.GLTFExporter();
+            const options = { binary: true, trs: false, onlyVisible: true, truncateDrawRange: false, embedImages: true };
+
+            exporter.parse(model, (result) => {
+                let blob;
+                if (result instanceof ArrayBuffer) {
+                    blob = new Blob([result], { type: 'model/gltf-binary' });
+                } else {
+                    const json = JSON.stringify(result, null, 2);
+                    blob = new Blob([json], { type: 'model/gltf+json' });
+                }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = lastLoadedFileName + '_correctedHeight.' + (options.binary ? 'glb' : 'gltf');
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 0);
+            }, options);
+        }
+
+        // Auto-adjustment and logging functions
+        function saveCurrentAdjustment() {
+            if (!model) {
+                alert('No model loaded to save adjustments for.');
+                return;
+            }
+
+            const box = new THREE.Box3().setFromObject(model);
+            const originalBox = new THREE.Box3().setFromObject(originalScene);
+            
+            const adjustment = {
+                timestamp: new Date().toISOString(),
+                fileName: lastLoadedFileName,
+                originalDimensions: {
+                    x: originalBox.getSize().x,
+                    y: originalBox.getSize().y,
+                    z: originalBox.getSize().z
+                },
+                originalPosition: {
+                    x: originalBox.getCenter().x,
+                    y: originalBox.getCenter().y,
+                    z: originalBox.getCenter().z
+                },
+                adjustedPosition: {
+                    x: model.position.x,
+                    y: model.position.y,
+                    z: model.position.z
+                },
+                adjustedRotation: {
+                    x: model.rotation.x,
+                    y: model.rotation.y,
+                    z: model.rotation.z
+                },
+                waterHeight: parseFloat(document.getElementById('waterZNumber').value) || 0,
+                waterVisible: document.getElementById('waterToggle').checked
+            };
+
+            adjustmentLogs.push(adjustment);
+            localStorage.setItem('modelAdjustmentLogs', JSON.stringify(adjustmentLogs));
+            
+            alert(`Saved adjustment for ${lastLoadedFileName}. Total logs: ${adjustmentLogs.length}`);
+        }
+
+        function autoAdjustModel() {
+            if (!model || adjustmentLogs.length === 0) {
+                alert('No model loaded or no saved adjustments to apply.');
+                return;
+            }
+
+            const box = new THREE.Box3().setFromObject(model);
+            const currentDimensions = box.getSize();
+            
+            // Find similar models based on dimensions (within 20% tolerance)
+            const similarLogs = adjustmentLogs.filter(log => {
+                const dimDiff = Math.abs(log.originalDimensions.y - currentDimensions.y) / log.originalDimensions.y;
+                return dimDiff < 0.2; // 20% tolerance
+            });
+
+            if (similarLogs.length === 0) {
+                alert('No similar models found in logs. Save some adjustments first.');
+                return;
+            }
+
+            // Calculate average adjustments from similar models
+            const avgAdjustment = {
+                x: similarLogs.reduce((sum, log) => sum + log.adjustedPosition.x, 0) / similarLogs.length,
+                y: similarLogs.reduce((sum, log) => sum + log.adjustedPosition.y, 0) / similarLogs.length,
+                z: similarLogs.reduce((sum, log) => sum + log.adjustedPosition.z, 0) / similarLogs.length,
+                rotX: similarLogs.reduce((sum, log) => sum + log.adjustedRotation.x, 0) / similarLogs.length,
+                rotY: similarLogs.reduce((sum, log) => sum + log.adjustedRotation.y, 0) / similarLogs.length,
+                rotZ: similarLogs.reduce((sum, log) => sum + log.adjustedRotation.z, 0) / similarLogs.length,
+                waterHeight: similarLogs.reduce((sum, log) => sum + log.waterHeight, 0) / similarLogs.length
+            };
+
+            // Apply adjustments
+            model.position.set(avgAdjustment.x, avgAdjustment.y, avgAdjustment.z);
+            model.rotation.set(avgAdjustment.rotX, avgAdjustment.rotY, avgAdjustment.rotZ);
+            
+            // Set water height
+            document.getElementById('waterZNumber').value = avgAdjustment.waterHeight.toFixed(2);
+            setWaterZ(avgAdjustment.waterHeight);
+            
+            updatePositionInputs();
+            updateRotationInputs();
+            updateModelInfo();
+            
+            alert(`Applied auto-adjustment based on ${similarLogs.length} similar models.`);
+        }
+
+        function clearAllLogs() {
+            if (confirm('Are you sure you want to clear all saved adjustments?')) {
+                adjustmentLogs = [];
+                localStorage.removeItem('modelAdjustmentLogs');
+                alert('All adjustment logs cleared.');
+            }
+        }
+
+        function exportLogsAsTXT() {
+            if (adjustmentLogs.length === 0) {
+                alert('No logs to export.');
+                return;
+            }
+
+            let txtContent = 'GLB Model Adjustment Logs\n';
+            txtContent += '========================\n\n';
+            txtContent += `Total adjustments: ${adjustmentLogs.length}\n\n`;
+
+            adjustmentLogs.forEach((log, index) => {
+                txtContent += `--- Adjustment ${index + 1} ---\n`;
+                txtContent += `File: ${log.fileName}\n`;
+                txtContent += `Date: ${new Date(log.timestamp).toLocaleString()}\n\n`;
+                
+                txtContent += 'ORIGINAL MODEL:\n';
+                txtContent += `  Dimensions: X=${log.originalDimensions.x.toFixed(3)}, Y=${log.originalDimensions.y.toFixed(3)}, Z=${log.originalDimensions.z.toFixed(3)}\n`;
+                txtContent += `  Position: X=${log.originalPosition.x.toFixed(3)}, Y=${log.originalPosition.y.toFixed(3)}, Z=${log.originalPosition.z.toFixed(3)}\n\n`;
+                
+                txtContent += 'ADJUSTED MODEL:\n';
+                txtContent += `  Position: X=${log.adjustedPosition.x.toFixed(3)}, Y=${log.adjustedPosition.y.toFixed(3)}, Z=${log.adjustedPosition.z.toFixed(3)}\n`;
+                txtContent += `  Rotation: X=${(log.adjustedRotation.x * 180 / Math.PI).toFixed(1)}°, Y=${(log.adjustedRotation.y * 180 / Math.PI).toFixed(1)}°, Z=${(log.adjustedRotation.z * 180 / Math.PI).toFixed(1)}°\n`;
+                txtContent += `  Water Height: ${log.waterHeight.toFixed(2)} meters\n`;
+                txtContent += `  Water Visible: ${log.waterVisible ? 'Yes' : 'No'}\n\n`;
+                
+                txtContent += 'CHANGES APPLIED:\n';
+                txtContent += `  X: ${(log.adjustedPosition.x - log.originalPosition.x).toFixed(3)} (${log.adjustedPosition.x.toFixed(3)} - ${log.originalPosition.x.toFixed(3)})\n`;
+                txtContent += `  Y: ${(log.adjustedPosition.y - log.originalPosition.y).toFixed(3)} (${log.adjustedPosition.y.toFixed(3)} - ${log.originalPosition.y.toFixed(3)})\n`;
+                txtContent += `  Z: ${(log.adjustedPosition.z - log.originalPosition.z).toFixed(3)} (${log.adjustedPosition.z.toFixed(3)} - ${log.originalPosition.z.toFixed(3)})\n\n`;
+                
+                txtContent += '---\n\n';
+            });
+
+            // Create and download the file
+            const blob = new Blob([txtContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `model_adjustment_logs_${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 0);
+        }
+
+        init();
+    </script>
+</body>
+</html>

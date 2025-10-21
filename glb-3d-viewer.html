@@ -102,6 +102,18 @@
             </div>
         </div>
         <div class="control-group">
+            <label>Highlight Axis for Rotation:</label>
+            <div class="axis-buttons">
+                <button id="highlightNone" class="active">None</button>
+                <button id="highlightX">X Axis</button>
+                <button id="highlightY">Y Axis</button>
+                <button id="highlightZ">Z Axis</button>
+            </div>
+            <div style="margin-top: 8px; padding: 6px; background: #e3f2fd; border-radius: 4px; font-size: 11px; color: #1565c0; line-height: 1.3;">
+                <strong>💡 Tip:</strong> Model front should face opposite to Z axis (blue). Use Z highlight to verify.
+            </div>
+        </div>
+        <div class="control-group">
             <label>Position Controls:</label>
             <div style="display:flex; flex-direction:column; gap:8px;">
                 <div style="display:flex; align-items:center; gap:10px;">
@@ -209,6 +221,9 @@
         let gridHelper = null;
         let axesHelper = null;
         let raycaster = new THREE.Raycaster();
+        let highlightedAxis = 'none'; // 'none', 'x', 'y', 'z'
+        let highlightedAxisLines = { x: null, y: null, z: null };
+        let axisLabels = { x: null, y: null, z: null };
 
         // Initialize scene
         function init() {
@@ -301,6 +316,14 @@
             
             // Update ground axis lines
             updateGroundAxisLines(scale);
+            
+            // Update highlighted axis if one is selected
+            if (highlightedAxis !== 'none') {
+                updateAxisHighlighting();
+            }
+            
+            // Update axis labels
+            updateAxisLabels(scale);
         }
 
         function updateGroundAxisLines(scale) {
@@ -442,6 +465,12 @@
             document.getElementById('btnY').addEventListener('click', () => setMovementMode('y'));
             document.getElementById('btnZ').addEventListener('click', () => setMovementMode('z'));
 
+            // Highlight axis buttons
+            document.getElementById('highlightNone').addEventListener('click', () => setHighlightedAxis('none'));
+            document.getElementById('highlightX').addEventListener('click', () => setHighlightedAxis('x'));
+            document.getElementById('highlightY').addEventListener('click', () => setHighlightedAxis('y'));
+            document.getElementById('highlightZ').addEventListener('click', () => setHighlightedAxis('z'));
+
             // Position controls
             document.getElementById('setX').addEventListener('click', () => setModelPosition('x'));
             document.getElementById('setY').addEventListener('click', () => setModelPosition('y'));
@@ -535,6 +564,128 @@
                 btn.classList.remove('active');
             });
             document.getElementById(`btn${mode === 'all' ? 'All' : mode.toUpperCase()}`).classList.add('active');
+        }
+
+        function setHighlightedAxis(axis) {
+            highlightedAxis = axis;
+            console.log('Setting highlighted axis to:', axis);
+            
+            // Update button states for highlight controls
+            document.querySelectorAll('#highlightNone, #highlightX, #highlightY, #highlightZ').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`highlight${axis === 'none' ? 'None' : axis.toUpperCase()}`).classList.add('active');
+            
+            // Update axis highlighting
+            updateAxisHighlighting();
+        }
+
+        function updateAxisHighlighting() {
+            console.log('Updating axis highlighting for:', highlightedAxis);
+            
+            // Remove existing highlighted axis lines
+            Object.values(highlightedAxisLines).forEach(line => {
+                if (line) {
+                    scene.remove(line);
+                }
+            });
+            highlightedAxisLines = { x: null, y: null, z: null };
+            
+            if (highlightedAxis === 'none') {
+                console.log('No axis to highlight');
+                return;
+            }
+            
+            // Get current scale
+            const scale = Math.max(1, Math.min(cameraDistance / 5, 100));
+            
+            // Create highlighted axis line with enhanced visibility
+            const highlightMaterial = new THREE.LineBasicMaterial({ 
+                color: getAxisColor(highlightedAxis), 
+                linewidth: 12,
+                transparent: true,
+                opacity: 1.0
+            });
+            
+            let geometry;
+            switch (highlightedAxis) {
+                case 'x':
+                    geometry = new THREE.BufferGeometry().setFromPoints([
+                        new THREE.Vector3(-10 * scale, 0, 0),
+                        new THREE.Vector3(10 * scale, 0, 0)
+                    ]);
+                    break;
+                case 'y':
+                    geometry = new THREE.BufferGeometry().setFromPoints([
+                        new THREE.Vector3(0, -10 * scale, 0),
+                        new THREE.Vector3(0, 10 * scale, 0)
+                    ]);
+                    break;
+                case 'z':
+                    geometry = new THREE.BufferGeometry().setFromPoints([
+                        new THREE.Vector3(0, 0, -10 * scale),
+                        new THREE.Vector3(0, 0, 10 * scale)
+                    ]);
+                    break;
+            }
+            
+            const highlightedLine = new THREE.Line(geometry, highlightMaterial);
+            scene.add(highlightedLine);
+            highlightedAxisLines[highlightedAxis] = highlightedLine;
+        }
+
+        function getAxisColor(axis) {
+            switch (axis) {
+                case 'x': return 0xff0000; // Red
+                case 'y': return 0x00ff00; // Green  
+                case 'z': return 0x0000ff; // Blue
+                default: return 0xffffff; // White
+            }
+        }
+
+        function updateAxisLabels(scale) {
+            // Remove existing axis labels
+            Object.values(axisLabels).forEach(label => {
+                if (label) {
+                    scene.remove(label);
+                }
+            });
+            axisLabels = { x: null, y: null, z: null };
+            
+            // Create axis labels using sprites
+            const labelDistance = 2.5 * scale;
+            const labelSize = Math.max(0.5, scale * 0.3);
+            
+            // Helper function to create label sprite
+            function createLabelSprite(text, color, position) {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = 64;
+                canvas.height = 64;
+                
+                context.fillStyle = color;
+                context.font = 'bold 48px Arial';
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+                context.fillText(text, canvas.width / 2, canvas.height / 2);
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.SpriteMaterial({ map: texture });
+                const sprite = new THREE.Sprite(material);
+                sprite.scale.set(labelSize, labelSize, 1);
+                sprite.position.copy(position);
+                scene.add(sprite);
+                return sprite;
+            }
+            
+            // X axis label (red)
+            axisLabels.x = createLabelSprite('X', '#ff0000', new THREE.Vector3(labelDistance, 0, 0));
+            
+            // Y axis label (green)
+            axisLabels.y = createLabelSprite('Y', '#00ff00', new THREE.Vector3(0, labelDistance, 0));
+            
+            // Z axis label (blue)
+            axisLabels.z = createLabelSprite('Z', '#0000ff', new THREE.Vector3(0, 0, labelDistance));
         }
 
         function setModelPosition(axis) {
@@ -728,6 +879,14 @@
 
         function animate() {
             requestAnimationFrame(animate);
+            
+            // Add pulsing effect to highlighted axis
+            if (highlightedAxis !== 'none' && highlightedAxisLines[highlightedAxis]) {
+                const time = Date.now() * 0.003;
+                const pulse = 0.5 + 0.5 * Math.sin(time);
+                highlightedAxisLines[highlightedAxis].material.opacity = pulse;
+            }
+            
             renderer.render(scene, camera);
         }
 

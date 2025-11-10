@@ -2,7 +2,7 @@
 
 A powerful, browser-based GLB/GLTF 3D model viewer and position adjustment tool built with Three.js. No installation required - runs entirely in your browser!
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Three.js](https://img.shields.io/badge/Three.js-r128-orange.svg)
 
@@ -26,6 +26,8 @@ A powerful, browser-based GLB/GLTF 3D model viewer and position adjustment tool 
 - 📝 **Adjustment Logs** - Save and export adjustment history as TXT files
 - 🔍 **Dynamic Scaling** - Grid and axis helpers automatically scale with camera distance
 - 🎨 **Professional UI** - Clean, intuitive interface with real-time visual feedback
+- 📱 **Responsive Design** - Optimized compact UI for lower resolution screens (down to 768px height)
+- ⚡ **No Scrolling** - All controls fit on screen without scrolling, even on smaller displays
 
 ## 🎯 Use Cases
 
@@ -169,6 +171,18 @@ Contributions are welcome! Feel free to:
 ## 📄 License
 
 This project is open source and available under the [MIT License](LICENSE).
+
+## 📝 Changelog
+
+### Version 1.1.0 (November 2025)
+- ✨ **Optimized UI for lower resolution screens** - Compact design fits on 768px height displays
+- 🎯 **Removed scrolling** - All controls now fit without scrolling for better UX
+- 📐 **Responsive improvements** - Dynamic sizing based on screen height with media queries
+- 🔧 **Compact controls** - Reduced padding, smaller fonts, and tighter spacing throughout
+- 🎨 **Streamlined buttons** - Combined buttons and shortened labels for space efficiency
+
+### Version 1.0.0
+- 🚀 Initial release with core functionality
 
 ## 👤 Author
 

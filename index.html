@@ -22,41 +22,53 @@
         }
         #controls {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 10px;
+            left: 10px;
             background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 10px;
+            padding: 10px;
+            border-radius: 8px;
             color: #222;
             z-index: 100;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             border: 1px solid #e5e5e5;
+            max-width: calc(100vw - 20px);
+            font-size: 12px;
         }
         .control-group {
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
         .control-group label {
             display: block;
-            margin-bottom: 5px;
-            font-size: 14px;
+            margin-bottom: 3px;
+            font-size: 12px;
+            font-weight: 500;
         }
         input[type="file"] {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
             color: #222;
+            font-size: 11px;
+        }
+        input[type="number"],
+        input[type="range"] {
+            font-size: 11px;
+        }
+        input[type="checkbox"] {
+            cursor: pointer;
         }
         .axis-buttons {
             display: flex;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 6px;
+            margin-top: 5px;
         }
         button {
-            padding: 8px 16px;
+            padding: 5px 10px;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
             transition: all 0.3s;
+            font-size: 11px;
         }
         button.active {
             background: #1976d2;
@@ -69,18 +81,56 @@
         button:hover {
             opacity: 0.8;
         }
+        /* Responsive adjustments for small screens */
+        @media (max-height: 900px) {
+            #controls {
+                padding: 8px;
+                font-size: 11px;
+            }
+            .control-group {
+                margin-bottom: 6px;
+            }
+        }
+        @media (max-height: 768px) {
+            #controls {
+                padding: 6px;
+                top: 5px;
+            }
+            .control-group {
+                margin-bottom: 5px;
+            }
+            .control-group label {
+                margin-bottom: 2px;
+                font-size: 10px;
+            }
+            button {
+                padding: 3px 6px;
+                font-size: 9px;
+            }
+            .axis-buttons {
+                gap: 3px;
+                margin-top: 3px;
+            }
+        }
+        @media (max-width: 768px) {
+            #controls {
+                padding: 8px;
+            }
+        }
         #info {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
+            bottom: 10px;
+            left: 10px;
             background: rgba(255, 255, 255, 0.95);
-            padding: 15px;
-            border-radius: 10px;
+            padding: 8px;
+            border-radius: 6px;
             color: #222;
-            font-size: 12px;
+            font-size: 10px;
             z-index: 100;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             border: 1px solid #e5e5e5;
+            max-width: calc(100vw - 20px);
+            line-height: 1.3;
         }
     </style>
 </head>
@@ -109,56 +159,56 @@
                 <button id="highlightY">Y Axis</button>
                 <button id="highlightZ">Z Axis</button>
             </div>
-            <div style="margin-top: 8px; padding: 6px; background: #e3f2fd; border-radius: 4px; font-size: 11px; color: #1565c0; line-height: 1.3;">
-                <strong>💡 Tip:</strong> Model front should face opposite to Z axis (blue). Use Z highlight to verify.
+            <div style="margin-top: 4px; padding: 4px; background: #e3f2fd; border-radius: 3px; font-size: 10px; color: #1565c0; line-height: 1.2;">
+                <strong>💡 Tip:</strong> Model front should face opposite to Z axis (blue).
             </div>
         </div>
         <div class="control-group">
             <label>Position Controls:</label>
-            <div style="display:flex; flex-direction:column; gap:8px;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <label for="posX" style="margin:0; width:20px;">X:</label>
-                    <input type="number" id="posX" step="0.01" style="width:80px;">
-                    <button id="setX" style="padding:4px 8px; font-size:12px;">Set</button>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label for="posX" style="margin:0; width:15px; font-size:11px;">X:</label>
+                    <input type="number" id="posX" step="0.01" style="width:65px; font-size:11px; padding:3px;">
+                    <button id="setX" style="padding:3px 6px; font-size:10px;">Set</button>
                 </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <label for="posY" style="margin:0; width:20px;">Y:</label>
-                    <input type="number" id="posY" step="0.01" style="width:80px;">
-                    <button id="setY" style="padding:4px 8px; font-size:12px;">Set</button>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label for="posY" style="margin:0; width:15px; font-size:11px;">Y:</label>
+                    <input type="number" id="posY" step="0.01" style="width:65px; font-size:11px; padding:3px;">
+                    <button id="setY" style="padding:3px 6px; font-size:10px;">Set</button>
                 </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <label for="posZ" style="margin:0; width:20px;">Z:</label>
-                    <input type="number" id="posZ" step="0.01" style="width:80px;">
-                    <button id="setZ" style="padding:4px 8px; font-size:12px;">Set</button>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label for="posZ" style="margin:0; width:15px; font-size:11px;">Z:</label>
+                    <input type="number" id="posZ" step="0.01" style="width:65px; font-size:11px; padding:3px;">
+                    <button id="setZ" style="padding:3px 6px; font-size:10px;">Set</button>
                 </div>
             </div>
         </div>
         <div class="control-group">
             <label>Rotation Controls:</label>
-            <div style="display:flex; flex-direction:column; gap:8px;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <label for="rotX" style="margin:0; width:20px;">X:</label>
-                    <input type="number" id="rotX" step="0.01" style="width:80px;" readonly>
-                    <button id="rotXMinus45" style="padding:4px 8px; font-size:12px;">-45°</button>
-                    <button id="rotXPlus45" style="padding:4px 8px; font-size:12px;">+45°</button>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <label for="rotX" style="margin:0; width:15px; font-size:11px;">X:</label>
+                    <input type="number" id="rotX" step="0.01" style="width:50px; font-size:10px; padding:2px;" readonly>
+                    <button id="rotXMinus45" style="padding:2px 5px; font-size:10px;">-45°</button>
+                    <button id="rotXPlus45" style="padding:2px 5px; font-size:10px;">+45°</button>
                 </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <label for="rotY" style="margin:0; width:20px;">Y:</label>
-                    <input type="number" id="rotY" step="0.01" style="width:80px;" readonly>
-                    <button id="rotYMinus45" style="padding:4px 8px; font-size:12px;">-45°</button>
-                    <button id="rotYPlus45" style="padding:4px 8px; font-size:12px;">+45°</button>
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <label for="rotY" style="margin:0; width:15px; font-size:11px;">Y:</label>
+                    <input type="number" id="rotY" step="0.01" style="width:50px; font-size:10px; padding:2px;" readonly>
+                    <button id="rotYMinus45" style="padding:2px 5px; font-size:10px;">-45°</button>
+                    <button id="rotYPlus45" style="padding:2px 5px; font-size:10px;">+45°</button>
                 </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <label for="rotZ" style="margin:0; width:20px;">Z:</label>
-                    <input type="number" id="rotZ" step="0.01" style="width:80px;" readonly>
-                    <button id="rotZMinus45" style="padding:4px 8px; font-size:12px;">-45°</button>
-                    <button id="rotZPlus45" style="padding:4px 8px; font-size:12px;">+45°</button>
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <label for="rotZ" style="margin:0; width:15px; font-size:11px;">Z:</label>
+                    <input type="number" id="rotZ" step="0.01" style="width:50px; font-size:10px; padding:2px;" readonly>
+                    <button id="rotZMinus45" style="padding:2px 5px; font-size:10px;">-45°</button>
+                    <button id="rotZPlus45" style="padding:2px 5px; font-size:10px;">+45°</button>
                 </div>
             </div>
-            <div style="margin-top:10px;">
-                <label for="rotationSlider" style="margin-bottom:5px; display:block;">Rotation Slider (Y-axis):</label>
+            <div style="margin-top:6px;">
+                <label for="rotationSlider" style="margin-bottom:2px; display:block; font-size:11px;">Rotation Slider (Y):</label>
                 <input type="range" id="rotationSlider" min="0" max="360" step="1" value="0" style="width:100%;">
-                <div style="text-align:center; font-size:12px; margin-top:5px;">
+                <div style="text-align:center; font-size:10px; margin-top:2px;">
                     <span id="rotationSliderValue">0°</span>
                 </div>
             </div>
@@ -171,23 +221,25 @@
         </div>
         <div class="control-group">
             <label>Auto-Adjustment:</label>
-            <div style="display:flex; flex-direction:column; gap:8px;">
-                <button id="saveLogBtn">Save Current Settings</button>
-                <button id="autoAdjustBtn">Auto-Adjust Model</button>
-                <button id="exportLogsBtn">Export Logs as TXT</button>
-                <button id="clearLogsBtn">Clear All Logs</button>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <button id="saveLogBtn">Save Settings</button>
+                <button id="autoAdjustBtn">Auto-Adjust</button>
+                <div style="display:flex; gap:4px;">
+                    <button id="exportLogsBtn" style="flex:1;">Export Logs</button>
+                    <button id="clearLogsBtn" style="flex:1;">Clear</button>
+                </div>
             </div>
         </div>
         <div class="control-group">
             <label>Water Simulation:</label>
-            <div style="display:flex; align-items:center; gap:10px;">
+            <div style="display:flex; align-items:center; gap:6px;">
                 <input type="checkbox" id="waterToggle">
-                <label for="waterToggle" style="margin:0;">Show water plane</label>
+                <label for="waterToggle" style="margin:0; font-size:11px;">Show water plane</label>
             </div>
-            <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
-                <label for="waterZ" style="margin:0;">Water height (Y):</label>
-                <input type="range" id="waterZ" min="-50" max="50" step="0.01" value="0" style="width:160px;">
-                <input type="number" id="waterZNumber" min="-50" max="50" step="0.01" value="0" style="width:90px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+                <label for="waterZ" style="margin:0; font-size:11px; min-width:85px;">Water height (Y):</label>
+                <input type="range" id="waterZ" min="-50" max="50" step="0.01" value="0" style="width:120px;">
+                <input type="number" id="waterZNumber" min="-50" max="50" step="0.01" value="0" style="width:70px; font-size:11px;">
             </div>
         </div>
     </div>

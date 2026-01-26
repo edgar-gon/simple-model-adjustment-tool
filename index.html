@@ -132,15 +132,77 @@
             max-width: calc(100vw - 20px);
             line-height: 1.3;
         }
+        #dropZone, #dropZoneMultiple {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            pointer-events: none;
+        }
+        #dropZone {
+            background: rgba(25, 118, 210, 0.9);
+        }
+        #dropZoneMultiple {
+            background: rgba(156, 39, 176, 0.9);
+        }
+        #dropZone.active, #dropZoneMultiple.active {
+            display: flex;
+        }
+        #dropZone .drop-icon, #dropZoneMultiple .drop-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 0.6s ease infinite alternate;
+        }
+        #dropZone .drop-text, #dropZoneMultiple .drop-text {
+            font-size: 28px;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+        }
+        #dropZone .drop-subtext, #dropZoneMultiple .drop-subtext {
+            font-size: 16px;
+            color: rgba(255,255,255,0.8);
+            margin-top: 10px;
+        }
+        #dropZoneMultiple .drop-count {
+            font-size: 22px;
+            color: white;
+            font-weight: 700;
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 30px;
+        }
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-15px); }
+        }
     </style>
 </head>
 <body>
+    <div id="dropZone">
+        <div class="drop-icon">📦</div>
+        <div class="drop-text">Drop your GLB model here</div>
+        <div class="drop-subtext">Release to load the 3D model</div>
+    </div>
+    <div id="dropZoneMultiple">
+        <div class="drop-icon">📦📦📦</div>
+        <div class="drop-text">Drop multiple GLB models</div>
+        <div class="drop-subtext">Release to batch process all models</div>
+        <div class="drop-count"></div>
+    </div>
     <div id="container"></div>
     
     <div id="controls">
         <div class="control-group">
             <label>Load GLB Model:</label>
-            <input type="file" id="fileInput" accept=".glb">
+            <input type="file" id="fileInput" accept=".glb" multiple>
         </div>
         <div class="control-group">
             <label>Movement Mode:</label>
@@ -181,6 +243,17 @@
                     <input type="number" id="posZ" step="0.01" style="width:65px; font-size:11px; padding:3px;">
                     <button id="setZ" style="padding:3px 6px; font-size:10px;">Set</button>
                 </div>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>Draught (meters):</label>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="number" id="draughtInput" step="0.1" min="0" style="width:70px; font-size:11px; padding:3px;" placeholder="0.0">
+                <label style="margin:0; font-size:10px; color:#666;">m</label>
+                <button id="setDraughtBtn" style="padding:3px 6px; font-size:10px;">Set</button>
+            </div>
+            <div style="margin-top:4px; padding:4px; background:#e3f2fd; border-radius:3px; font-size:9px; color:#1565c0; line-height:1.2;">
+                <strong>💡</strong> Draught = how much ship is submerged. Adjusts Y position downward.
             </div>
         </div>
         <div class="control-group">
@@ -242,6 +315,31 @@
                 <input type="number" id="waterZNumber" min="-50" max="50" step="0.01" value="0" style="width:70px; font-size:11px;">
             </div>
         </div>
+        <div class="control-group">
+            <label>Ship Size Adjustment:</label>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label for="sizeWidth" style="margin:0; width:50px; font-size:11px;">Width:</label>
+                    <input type="number" id="sizeWidth" step="0.01" min="0" style="width:70px; font-size:11px; padding:3px;" placeholder="X">
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label for="sizeHeight" style="margin:0; width:50px; font-size:11px;">Height:</label>
+                    <input type="number" id="sizeHeight" step="0.01" min="0" style="width:70px; font-size:11px; padding:3px; background:#e8f5e9;" placeholder="Auto">
+                    <span style="font-size:9px; color:#666;">(auto)</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label for="sizeLength" style="margin:0; width:50px; font-size:11px;">Length:</label>
+                    <input type="number" id="sizeLength" step="0.01" min="0" style="width:70px; font-size:11px; padding:3px;" placeholder="Z">
+                </div>
+                <div style="display:flex; gap:4px; margin-top:4px;">
+                    <button id="applySizeBtn" style="flex:1;">Apply Size</button>
+                    <button id="resetSizeBtn" style="flex:1;">Reset</button>
+                </div>
+                <div style="margin-top:4px; padding:4px; background:#fff3e0; border-radius:3px; font-size:9px; color:#e65100; line-height:1.2;">
+                    <strong>💡</strong> Enter Width &amp; Length. Height auto-calculates to minimize distortion.
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="info">
@@ -255,6 +353,7 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
     <script>
@@ -276,6 +375,7 @@
         let highlightedAxis = 'none'; // 'none', 'x', 'y', 'z'
         let highlightedAxisLines = { x: null, y: null, z: null };
         let axisLabels = { x: null, y: null, z: null };
+        let originalModelDimensions = { width: 1, height: 1, length: 1 }; // Original dimensions for scaling
 
         // Initialize scene
         function init() {
@@ -292,7 +392,7 @@
             updateCameraPosition();
 
             // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.getElementById('container').appendChild(renderer.domElement);
 
@@ -436,6 +536,16 @@
             const box = new THREE.Box3().setFromObject(model);
             cameraTarget.copy(box.getCenter(new THREE.Vector3()));
             frameCameraToBox(box);
+            
+            // Store original dimensions for size adjustment
+            const size = box.getSize(new THREE.Vector3());
+            originalModelDimensions = {
+                width: size.x,
+                height: size.y,
+                length: size.z
+            };
+            updateSizeInputs();
+            
             updateModelInfo();
             updatePositionInputs();
             updateRotationInputs();
@@ -504,10 +614,22 @@
         function setupEventListeners() {
             const fileInput = document.getElementById('fileInput');
             fileInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    lastLoadedFileName = (file.name || 'model').replace(/\.[^/.]+$/, '');
-                    loadGLB(file);
+                if (e.target.files.length > 1) {
+                    if (confirm(`Process ${e.target.files.length} files for screenshots?`)) {
+                        processBatch(Array.from(e.target.files));
+                    } else {
+                        const file = e.target.files[0];
+                        if (file) {
+                            lastLoadedFileName = (file.name || 'model').replace(/\.[^/.]+$/, '');
+                            loadGLB(file);
+                        }
+                    }
+                } else {
+                    const file = e.target.files[0];
+                    if (file) {
+                        lastLoadedFileName = (file.name || 'model').replace(/\.[^/.]+$/, '');
+                        loadGLB(file);
+                    }
                 }
             });
 
@@ -527,6 +649,9 @@
             document.getElementById('setX').addEventListener('click', () => setModelPosition('x'));
             document.getElementById('setY').addEventListener('click', () => setModelPosition('y'));
             document.getElementById('setZ').addEventListener('click', () => setModelPosition('z'));
+            
+            // Draught control
+            document.getElementById('setDraughtBtn').addEventListener('click', setDraught);
 
             // Rotation controls
             document.getElementById('rotXMinus45').addEventListener('click', () => rotateModel('x', -45));
@@ -568,6 +693,14 @@
                 clearAllLogs();
             });
 
+            // Ship size adjustment controls
+            document.getElementById('applySizeBtn').addEventListener('click', applyShipSize);
+            document.getElementById('resetSizeBtn').addEventListener('click', resetShipSize);
+            
+            // Auto-calculate height when width or length changes
+            document.getElementById('sizeWidth').addEventListener('input', autoCalculateHeight);
+            document.getElementById('sizeLength').addEventListener('input', autoCalculateHeight);
+
             // Water controls
             const waterToggle = document.getElementById('waterToggle');
             const waterZ = document.getElementById('waterZ');
@@ -608,6 +741,93 @@
             renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
             window.addEventListener('resize', onWindowResize);
+
+            // Drag and drop events
+            const dropZone = document.getElementById('dropZone');
+            const dropZoneMultiple = document.getElementById('dropZoneMultiple');
+            const dropCount = dropZoneMultiple.querySelector('.drop-count');
+            let dragCounter = 0;
+            
+            function updateDropZoneVisibility(fileCount) {
+                if (fileCount > 1) {
+                    dropZone.classList.remove('active');
+                    dropZoneMultiple.classList.add('active');
+                    dropCount.textContent = `${fileCount} files selected`;
+                } else if (fileCount === 1) {
+                    dropZoneMultiple.classList.remove('active');
+                    dropZone.classList.add('active');
+                } else {
+                    dropZone.classList.remove('active');
+                    dropZoneMultiple.classList.remove('active');
+                }
+            }
+            
+            function hideAllDropZones() {
+                dropZone.classList.remove('active');
+                dropZoneMultiple.classList.remove('active');
+            }
+            
+            document.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter++;
+                if (e.dataTransfer.types.includes('Files')) {
+                    // Try to get file count from items
+                    const itemCount = e.dataTransfer.items ? e.dataTransfer.items.length : 1;
+                    updateDropZoneVisibility(itemCount);
+                }
+            });
+            
+            document.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter--;
+                if (dragCounter === 0) {
+                    hideAllDropZones();
+                }
+            });
+            
+            document.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Update file count during drag (more accurate)
+                if (e.dataTransfer.items) {
+                    const glbCount = Array.from(e.dataTransfer.items).filter(item => 
+                        item.kind === 'file'
+                    ).length;
+                    if (glbCount > 0) {
+                        updateDropZoneVisibility(glbCount);
+                    }
+                }
+            });
+            
+            document.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter = 0;
+                hideAllDropZones();
+                
+                const files = Array.from(e.dataTransfer.files).filter(f => f.name.toLowerCase().endsWith('.glb'));
+                
+                if (files.length === 0) {
+                    alert('Please drop .glb files only.');
+                    return;
+                }
+                
+                if (files.length > 1) {
+                    if (confirm(`Process ${files.length} files for screenshots?`)) {
+                        processBatch(files);
+                    } else {
+                        const file = files[0];
+                        lastLoadedFileName = (file.name || 'model').replace(/\.[^/.]+$/, '');
+                        loadGLB(file);
+                    }
+                } else {
+                    const file = files[0];
+                    lastLoadedFileName = (file.name || 'model').replace(/\.[^/.]+$/, '');
+                    loadGLB(file);
+                }
+            });
         }
 
         function setMovementMode(mode) {
@@ -762,12 +982,120 @@
             }
         }
 
+        function setDraught() {
+            if (!model) {
+                alert('No model loaded.');
+                return;
+            }
+            
+            const draughtMeters = parseFloat(document.getElementById('draughtInput').value);
+            
+            if (isNaN(draughtMeters) || draughtMeters < 0) {
+                alert('Please enter a valid draught value (in meters, >= 0).');
+                return;
+            }
+            
+            // Get the model's current bounding box in world space
+            const worldBox = new THREE.Box3().setFromObject(model);
+            const modelHeightUnits = worldBox.getSize().y;
+            const currentBottom = worldBox.min.y;
+            const currentCenter = model.position.y;
+            
+            // Calculate conversion factor from the size adjustment inputs
+            // The user enters Width and Length in meters, and the model gets scaled to match
+            // After scaling, the model's current dimensions in units should equal the user-entered meters
+            let metersToUnitsFactor = 1.0; // default: 1 unit = 1 meter
+            
+            // Get the current model dimensions (after any scaling)
+            const currentWidthUnits = worldBox.getSize().x;
+            const currentLengthUnits = worldBox.getSize().z;
+            
+            // Try to get the conversion from Width or Length (user enters these in meters)
+            const sizeWidthInput = document.getElementById('sizeWidth');
+            const sizeLengthInput = document.getElementById('sizeLength');
+            
+            // Use Width first, then Length as fallback
+            let modelDimensionMeters = null;
+            let modelDimensionUnits = null;
+            
+            if (sizeWidthInput && sizeWidthInput.value && parseFloat(sizeWidthInput.value) > 0) {
+                modelDimensionMeters = parseFloat(sizeWidthInput.value);
+                modelDimensionUnits = currentWidthUnits;
+            } else if (sizeLengthInput && sizeLengthInput.value && parseFloat(sizeLengthInput.value) > 0) {
+                modelDimensionMeters = parseFloat(sizeLengthInput.value);
+                modelDimensionUnits = currentLengthUnits;
+            }
+            
+            if (modelDimensionMeters && modelDimensionUnits && modelDimensionUnits > 0) {
+                // Calculate: if current dimension is X units and user says it's Y meters, then 1 meter = X/Y units
+                metersToUnitsFactor = modelDimensionUnits / modelDimensionMeters;
+            } else {
+                // Fallback: if no size adjustment has been made, assume 1 unit = 1 meter
+                metersToUnitsFactor = 1.0;
+            }
+            
+            // Convert draught from meters to 3D units using the calculated factor
+            const draughtUnits = draughtMeters * metersToUnitsFactor;
+            
+            // Calculate the signed offset from center to bottom
+            // If center is above bottom, this will be positive
+            const centerToBottomOffset = currentCenter - currentBottom;
+            
+            // Target bottom position (below waterline Y=0)
+            // Draught means the bottom should be at -draughtUnits
+            const targetBottom = -draughtUnits;
+            
+            // Calculate new center position so bottom is at target
+            const newCenterY = targetBottom + centerToBottomOffset;
+            
+            // Set the new position
+            model.position.y = newCenterY;
+            
+            updatePositionInputs();
+            updateModelInfo();
+        }
+
         function updatePositionInputs() {
             if (!model) return;
             
             document.getElementById('posX').value = model.position.x.toFixed(3);
             document.getElementById('posY').value = model.position.y.toFixed(3);
             document.getElementById('posZ').value = model.position.z.toFixed(3);
+            
+            // Update draught value based on model's bottom position
+            const box = new THREE.Box3().setFromObject(model);
+            const modelBottom = box.min.y;
+            
+            // Calculate conversion factor (same as in setDraught)
+            let metersToUnitsFactor = 1.0; // default: 1 unit = 1 meter
+            
+            // Get current model dimensions (after any scaling)
+            const currentWidthUnits = box.getSize().x;
+            const currentLengthUnits = box.getSize().z;
+            
+            // Use Width or Length from size adjustment (user enters these in meters)
+            const sizeWidthInput = document.getElementById('sizeWidth');
+            const sizeLengthInput = document.getElementById('sizeLength');
+            
+            let modelDimensionMeters = null;
+            let modelDimensionUnits = null;
+            
+            if (sizeWidthInput && sizeWidthInput.value && parseFloat(sizeWidthInput.value) > 0) {
+                modelDimensionMeters = parseFloat(sizeWidthInput.value);
+                modelDimensionUnits = currentWidthUnits;
+            } else if (sizeLengthInput && sizeLengthInput.value && parseFloat(sizeLengthInput.value) > 0) {
+                modelDimensionMeters = parseFloat(sizeLengthInput.value);
+                modelDimensionUnits = currentLengthUnits;
+            }
+            
+            if (modelDimensionMeters && modelDimensionUnits && modelDimensionUnits > 0) {
+                metersToUnitsFactor = modelDimensionUnits / modelDimensionMeters;
+            }
+            
+            // Convert from units to meters (inverse of conversion factor)
+            // Draught is how much is submerged, so it's the negative of the bottom position
+            const draughtMeters = Math.max(0, -modelBottom / metersToUnitsFactor);
+            document.getElementById('draughtInput').value = draughtMeters.toFixed(1);
         }
 
         function updateRotationInputs() {
@@ -1072,6 +1400,93 @@
             }
         }
 
+        // Ship Size Adjustment Functions
+        function updateSizeInputs() {
+            if (!model) return;
+            
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            
+            document.getElementById('sizeWidth').value = size.x.toFixed(3);
+            document.getElementById('sizeHeight').value = size.y.toFixed(3);
+            document.getElementById('sizeLength').value = size.z.toFixed(3);
+        }
+
+        function autoCalculateHeight() {
+            if (!model || originalModelDimensions.width === 0 || originalModelDimensions.length === 0) return;
+            
+            const newWidth = parseFloat(document.getElementById('sizeWidth').value);
+            const newLength = parseFloat(document.getElementById('sizeLength').value);
+            
+            if (isNaN(newWidth) || isNaN(newLength) || newWidth <= 0 || newLength <= 0) return;
+            
+            // Calculate scale factors for width and length
+            const widthScale = newWidth / originalModelDimensions.width;
+            const lengthScale = newLength / originalModelDimensions.length;
+            
+            // Use geometric mean for height scale to minimize distortion
+            // This preserves proportions better than arithmetic mean
+            const heightScale = Math.sqrt(widthScale * lengthScale);
+            
+            // Calculate the new height
+            const newHeight = originalModelDimensions.height * heightScale;
+            
+            document.getElementById('sizeHeight').value = newHeight.toFixed(3);
+        }
+
+        function applyShipSize() {
+            if (!model) {
+                alert('No model loaded.');
+                return;
+            }
+            
+            const newWidth = parseFloat(document.getElementById('sizeWidth').value);
+            const newHeight = parseFloat(document.getElementById('sizeHeight').value);
+            const newLength = parseFloat(document.getElementById('sizeLength').value);
+            
+            if (isNaN(newWidth) || isNaN(newHeight) || isNaN(newLength)) {
+                alert('Please enter valid dimensions.');
+                return;
+            }
+            
+            if (newWidth <= 0 || newHeight <= 0 || newLength <= 0) {
+                alert('Dimensions must be greater than 0.');
+                return;
+            }
+            
+            // Calculate scale factors
+            const scaleX = newWidth / originalModelDimensions.width;
+            const scaleY = newHeight / originalModelDimensions.height;
+            const scaleZ = newLength / originalModelDimensions.length;
+            
+            // Apply scaling to model
+            model.scale.set(scaleX, scaleY, scaleZ);
+            
+            // Update camera and info
+            const box = new THREE.Box3().setFromObject(model);
+            cameraTarget.copy(box.getCenter(new THREE.Vector3()));
+            frameCameraToBox(box);
+            updateCameraPosition();
+            updateModelInfo();
+        }
+
+        function resetShipSize() {
+            if (!model) return;
+            
+            // Reset model scale to original
+            model.scale.set(1, 1, 1);
+            
+            // Update inputs to show original dimensions
+            updateSizeInputs();
+            
+            // Update camera and info
+            const box = new THREE.Box3().setFromObject(model);
+            cameraTarget.copy(box.getCenter(new THREE.Vector3()));
+            frameCameraToBox(box);
+            updateCameraPosition();
+            updateModelInfo();
+        }
+
         function exportLogsAsTXT() {
             if (adjustmentLogs.length === 0) {
                 alert('No logs to export.');
@@ -1118,6 +1533,136 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             }, 0);
+        }
+
+        async function processBatch(files) {
+            let processedCount = 0;
+            const total = files.length;
+            const propsEl = document.getElementById('modelProps');
+            const zip = new JSZip();
+            const imgFolder = zip.folder("screenshots");
+            
+            // Create a loading overlay if it doesn't exist
+            let overlay = document.getElementById('batchOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'batchOverlay';
+                overlay.style.position = 'absolute';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.background = 'rgba(0,0,0,0.8)';
+                overlay.style.color = 'white';
+                overlay.style.display = 'flex';
+                overlay.style.flexDirection = 'column';
+                overlay.style.justifyContent = 'center';
+                overlay.style.alignItems = 'center';
+                overlay.style.zIndex = '1000';
+                overlay.innerHTML = '<h2>Processing Batch...</h2><div id="batchProgress">0%</div>';
+                document.body.appendChild(overlay);
+            }
+            overlay.style.display = 'flex';
+            const progressEl = document.getElementById('batchProgress');
+
+            // Store original camera state
+            const originalCameraPos = camera.position.clone();
+            const originalCameraTarget = cameraTarget.clone();
+            const originalDistance = cameraDistance;
+            
+            try {
+                for (const file of files) {
+                    try {
+                        const fileName = (file.name || 'model').replace(/\.[^/.]+$/, '');
+                        lastLoadedFileName = fileName;
+                        
+                        const progress = Math.round((processedCount / total) * 100);
+                        progressEl.textContent = `${progress}% - Processing: ${fileName}`;
+                        propsEl.textContent = `Processing ${processedCount + 1}/${total}: ${fileName}...`;
+                        
+                        await loadGLBPromise(file);
+                        
+                        // Wait for layout and rendering
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        
+                        // Force render
+                        renderer.render(scene, camera);
+                        
+                        // Get screenshot data
+                        const dataUrl = renderer.domElement.toDataURL('image/png');
+                        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
+                        
+                        // Add to zip
+                        imgFolder.file(`${fileName}.png`, base64Data, {base64: true});
+                        
+                        processedCount++;
+                        
+                    } catch (err) {
+                        console.error(`Error processing ${file.name}:`, err);
+                        propsEl.textContent = `Error processing ${file.name}`;
+                    }
+                }
+                
+                progressEl.textContent = 'Generating ZIP file...';
+                
+                // Generate and download zip
+                const content = await zip.generateAsync({type: "blob"});
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `model_screenshots_batch_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                propsEl.textContent = `Batch processing complete. Processed ${processedCount} models.`;
+                alert('Batch processing complete! ZIP file downloaded.');
+                
+            } catch (error) {
+                console.error("Batch process error:", error);
+                alert("An error occurred during batch processing.");
+            } finally {
+                // Restore UI
+                overlay.style.display = 'none';
+                // Ideally restore the last model or clear, but for now we leave the last one loaded
+            }
+        }
+
+        function loadGLBPromise(file) {
+            return new Promise((resolve, reject) => {
+                const loader = new THREE.GLTFLoader();
+                const url = URL.createObjectURL(file);
+
+                loader.load(url, (gltf) => {
+                    if (model) {
+                        scene.remove(model);
+                        model = null;
+                    }
+
+                    originalScene = gltf.scene;
+                    placeModel();
+                    URL.revokeObjectURL(url);
+                    resolve();
+                }, undefined, (error) => {
+                    URL.revokeObjectURL(url);
+                    reject(error);
+                });
+            });
+        }
+
+        function takeScreenshot(fileName) {
+             try {
+                 const dataURL = renderer.domElement.toDataURL('image/png');
+                 const link = document.createElement('a');
+                 link.href = dataURL;
+                 link.download = `${fileName}.png`;
+                 document.body.appendChild(link);
+                 link.click();
+                 document.body.removeChild(link);
+             } catch (e) {
+                 console.error('Screenshot failed:', e);
+             }
         }
 
         init();
